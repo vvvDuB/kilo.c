@@ -1,20 +1,29 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <termios.h>
 
+struct termios orig_termios;
+
+// Reset the ECHO or type 'reset' if the terminal is broken 
+void disableRawMode() {
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios); 
+}
+
 void enableRawMode() {
-    // raw struct
-    struct termios raw;
+    tcgetattr(STDIN_FILENO, &orig_termios);
+    atexit(disableRawMode); // Call after quit with 'q'
+    
+    struct termios raw = orig_termios;
     
     // the ECHO feature give what you type on terminal, we dont want it 
-    tcgetattr(STDIN_FILENO, &raw);
     // This c_lflag is a bit mask and 'ECHO' will be a specific 1, when ~(1)
     // will be 0, turning off the ECHO feature, like '11110111' 0 is ECHO
+    // this is a bitwise-NOT so: 00001000 -> 11110111 
     raw.c_lflag &= ~(ECHO);
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw);
 }
 
-// TODO: Reset the ECHO, type 'reset' if the terminal is broken 
 
 int main(void) {
     // Now the stdin input is hidden
